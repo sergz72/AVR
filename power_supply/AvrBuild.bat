@@ -1,0 +1,2 @@
+@ECHO OFF
+"d:\Program Files\Atmel\AVR Tools\AvrAssembler2\avrasm2.exe" -S "D:\serg\my\Programs\AVR\power_supply\labels.tmp" -fI -W+ie -C V2E -o "D:\serg\my\Programs\AVR\power_supply\power_supply.hex" -d "D:\serg\my\Programs\AVR\power_supply\power_supply.obj" -e "D:\serg\my\Programs\AVR\power_supply\power_supply.eep" -m "D:\serg\my\Programs\AVR\power_supply\power_supply.map" "D:\serg\my\Programs\AVR\power_supply\power_supply.asm"

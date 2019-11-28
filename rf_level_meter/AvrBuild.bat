@@ -1,0 +1,2 @@
+@ECHO OFF
+"d:\Program Files\Atmel\AVR Tools\AvrAssembler2\avrasm2.exe" -S "D:\serg\my\Programs\AVR\rf_level_meter\labels.tmp" -fI -W+ie -C V2E -o "D:\serg\my\Programs\AVR\rf_level_meter\rf_level_meter.hex" -d "D:\serg\my\Programs\AVR\rf_level_meter\rf_level_meter.obj" -e "D:\serg\my\Programs\AVR\rf_level_meter\rf_level_meter.eep" -m "D:\serg\my\Programs\AVR\rf_level_meter\rf_level_meter.map" "D:\serg\my\Programs\AVR\rf_level_meter\rf_level_meter.asm"
