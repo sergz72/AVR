@@ -105,7 +105,7 @@ static void InitCCL(void)
 
 static void InitVREF(void)
 {
-    VREF.CTRLC = 3; // DAC1 reference = 2.5v
+    VREF.CTRLC = 2; // DAC1 reference = 2.5v
     VREF.CTRLD = 0; // DAC2 reference = 0.55v
     VREF.CTRLB = 0x28; // Enable references for DAC1, DAC2
 }
