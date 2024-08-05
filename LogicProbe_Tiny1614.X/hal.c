@@ -66,13 +66,13 @@ static void InitDAC2(void)
         case 0:
             DAC2.DATA = 47; // ~0.1v
             break;
-        case 0x04:
+        case 0x10:
             DAC2.DATA = 93; // ~0.2v
             break;
-        case 0x08:
+        case 0x20:
             DAC2.DATA = 139; // ~0.3v
             break;
-        case 0x0C:
+        case 0x30:
             DAC2.DATA = 187; // ~0.4v
             break;
     }
@@ -112,6 +112,8 @@ static void InitVREF(void)
 
 void HALInit(void)
 {
+    CLKCTRL.MCLKCTRLB = 1; // 10 MHz clock
+    
     InitVREF();
     InitPorts();
     // pull up resistors are about 60k, RC delay with C = 100pf ~10us
