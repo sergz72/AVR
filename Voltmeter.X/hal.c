@@ -17,7 +17,7 @@ void HALInit(void)
     /* Wait until RTC is not busy. */
     } while (RTC_Busy());
     
-    RTC.PER = 3; // 1/341 second interrupt
+    RTC.PER = 6; // 1/341 second interrupt
     RTC.CTRL = 1; // no prescaler
     RTC.INTCTRL = RTC_OVFINTLVL_LO_gc;
     CLK.RTCCTRL = 0x05; //RTC Clock Source Enable - 1.024kHz from 32.768kHz internal oscillator
