@@ -1,0 +1,10 @@
+0 A,B,C,D,E,F
+1 B,C
+2 A,B,M,G,E,D
+3 A,B,M,G,C,D
+4 F,G,M,B,C
+5 A,F,G,M,C,D
+6 A,F,G,M,C,D,E
+7 A,B,C
+8 A,B,C,D,E,F,G,M
+9 A,B,C,D,F,G,M
