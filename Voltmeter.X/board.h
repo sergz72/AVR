@@ -22,6 +22,9 @@
 #define SEGMENT_LCD_COM3_SET0 PORTA.OUTCLR = 0x04; PORTA.DIRSET = 0x04 // PA2 set to 0
 #define SEGMENT_LCD_COM3_SET1 PORTA.OUTSET = 0x04; PORTA.DIRSET = 0x04 // PA2 set to 1
 
+#define RC_PER_VALUE 6 // 1/171 second interrupt
+#define MEASUREMENT_PERIOD 85 // measurements every 0.5 second
+
 void HALInit(void);
 
 #endif

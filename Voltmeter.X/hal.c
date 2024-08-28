@@ -10,18 +10,30 @@ void HALInit(void)
     while (!(OSC.STATUS & 4)); // Wait for RC32K to stabilize
   
     CCP = CCP_IOREG_gc;
-    // clkper4 = clkper2 = clkper = clkcpu = 2M / 4 = 500 kHz
-    CLK.PSCTRL = 3 << 2;
+    // clkper4 = clkper2 = clkper = clkcpu = 2M / 8 = 250 kHz
+    CLK.PSCTRL = 5 << 2;
   
     do {
     /* Wait until RTC is not busy. */
     } while (RTC_Busy());
     
-    RTC.PER = 6; // 1/341 second interrupt
+    RTC.PER = RC_PER_VALUE;
     RTC.CTRL = 1; // no prescaler
     RTC.INTCTRL = RTC_OVFINTLVL_LO_gc;
     CLK.RTCCTRL = 0x05; //RTC Clock Source Enable - 1.024kHz from 32.768kHz internal oscillator
 
+    // High current limit, max. sampling rate 75kSPS
+    // More than 12-bit right adjusted result, then oversampling or averaging is used (SAPNUM>0)
+    ADCA.CTRLB = 0b01100010;
+    ADCA.REFCTRL = 0b00010010; // VREF = AVCC/1.6, bandgap enable
+    ADCA.PRESCALER = 0; // DIV4
+    ADCA.SAMPCTRL = 0x3F; // maximum samplimng time
+    ADCA.CH0.CTRL = 1; // single ended
+    ADCA.CH0.MUXCTRL = 4 << 3; // channel 4
+    ADCA.CH0.AVGCTRL = 8; //256 samples, 16 bit resolution
+    
+    ADCA.CTRLA = 1; // enable ADC
+    
     PMIC.CTRL = 7;
 
     //CCP = CCP_IOREG_gc;
