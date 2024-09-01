@@ -4,6 +4,25 @@
 
 #define RTC_Busy()               ( RTC.STATUS & RTC_SYNCBUSY_bm )
 
+/*
+COM0=PC0
+COM1=PC1
+COM2=PC2
+COM3=PR1
+SEG12=PR0
+SEG11=PD7
+SEG10=PD6
+SEG9=PD5
+SEG8=PD4
+SEG7=PD3
+SEG6=PD2
+SEG5=PD1
+SEG4=PA5
+SEG3=PA6
+SEG2=PA7
+SEG1=PD0
+*/
+
 void HALInit(void)
 {
     OSC.CTRL = 5; // Enable RC32K
@@ -43,26 +62,40 @@ void HALInit(void)
     set_sleep_mode(SLEEP_MODE_IDLE);    
 }
 
+/*
+SEG12=PR0
+SEG11=PD7
+SEG10=PD6
+SEG9=PD5
+SEG8=PD4
+SEG7=PD3
+SEG6=PD2
+SEG5=PD1
+SEG4=PA5
+SEG3=PA6
+SEG2=PA7
+SEG1=PD0
+*/
+
 void SetSegmentLcdData(const unsigned char *dp)
 {
     unsigned char c;
     
     if (!dp)
     {
-        PORTA.DIRCLR = 3; // only PA1, PA0
-        PORTC.DIRCLR = 0xFF;
+        PORTA.DIRCLR = 0xE0; // PA5,6,7
         PORTD.DIRCLR = 0xFF;
-        PORTR.DIRCLR = 3;
+        PORTR.DIRCLR = 1;
         return;
     }
-    c = (*dp++) & 3;
-    PORTA.OUTCLR = c ^ 3;
+    c = *dp++;
+    PORTA.OUTCLR = c ^ 0xE0;
     PORTA.OUTSET = c;
-    PORTC.OUT = *dp++;
     PORTD.OUT = *dp++;
-    PORTR.OUT = *dp;
-    PORTA.DIRSET = 3;
-    PORTC.DIRSET = 0xFF;
+    c = *dp;
+    PORTR.OUTCLR = c ^ 1;
+    PORTR.OUTSET = c;
+    PORTA.DIRSET = 0xE0;
     PORTD.DIRSET = 0xFF;
-    PORTR.DIRSET = 3;
+    PORTR.DIRSET = 1;
 }

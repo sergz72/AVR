@@ -23,8 +23,8 @@ ISR(RTC_OVF_vect)
 }
 
 int main(void) {
-    unsigned char lcd_data[6];
-    unsigned long v;
+    unsigned char lcd_data[7];
+    //unsigned long v;
     
     HALInit();
     
@@ -32,19 +32,20 @@ int main(void) {
 
     counter = start_measurements = 0;
     
-    /*lcd_data[0] = 0x80 + '1';
-    lcd_data[1] = '2';
-    lcd_data[2] = '3';
-    lcd_data[3] = '4';
-    lcd_data[4] = '5';
-    lcd_data[5] = 0;
-    SegmentLcdPuts(lcd_data);*/
+    lcd_data[0] = 10; // U
+    lcd_data[1] = 1;
+    lcd_data[2] = 2;
+    lcd_data[3] = 3;
+    lcd_data[4] = 4;
+    lcd_data[5] = 0x80 + 5;
+    lcd_data[6] = 0;
+    SegmentLcdPuts(lcd_data);
     
     sei();
     
     while (1) {
         sleep_cpu();
-        if (start_measurements)
+        /*if (start_measurements)
         {
             start_measurements = 0;
             ADCA.CH0.CTRL |= 0x80; // start ch0 conversion
@@ -61,6 +62,6 @@ int main(void) {
             lcd_data[0] = v + '0';
             lcd_data[5] = 0;
             SegmentLcdPuts(lcd_data);
-        }
+        }*/
     }
 }
