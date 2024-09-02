@@ -26,8 +26,10 @@
 #define SEGMENT_LCD_COM3_SET0 PORTR.OUTCLR = 2; PORTR.DIRSET = 2 // PR1 set to 0
 #define SEGMENT_LCD_COM3_SET1 PORTR.OUTSET = 2; PORTR.DIRSET = 2 // PR1 set to 1
 
-#define RC_PER_VALUE 3 // 1/171 second interrupt
-#define MEASUREMENT_PERIOD 85 // measurements every 0.5 second
+#define BUTTON_PRESSED !(PORTA.IN & 4)
+
+#define RC_PER_VALUE 3 // 1/341 second interrupt
+#define MEASUREMENT_PERIOD 171 // measurements every 0.5 second
 
 void HALInit(void);
 
