@@ -44,11 +44,10 @@ void HALInit(void)
     // High current limit, max. sampling rate 75kSPS
     // More than 12-bit right adjusted result, then oversampling or averaging is used (SAPNUM>0)
     ADCA.CTRLB = 0b01100010;
-    ADCA.REFCTRL = 0b00010010; // VREF = AVCC/1.6, bandgap enable
+    ADCA.REFCTRL = 0b00100000; // VREF = External reference from AREF on port A
     ADCA.PRESCALER = 0; // DIV4
     ADCA.SAMPCTRL = 0x3F; // maximum samplimng time
     ADCA.CH0.CTRL = 1; // single ended
-    ADCA.CH0.MUXCTRL = 4 << 3; // channel 4
     ADCA.CH0.AVGCTRL = 8; //256 samples, 16 bit resolution
     
     ADCA.CTRLA = 1; // enable ADC
