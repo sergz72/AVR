@@ -32,5 +32,6 @@
 #define MEASUREMENT_PERIOD 171 // measurements every 0.5 second
 
 void HALInit(void);
+unsigned short GetADCValue(unsigned char channel);
 
 #endif

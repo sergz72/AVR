@@ -53,7 +53,7 @@ static unsigned char channel;
 ISR(RTC_OVF_vect)
 {
     wdt_reset();
-    SegmentLcdRefresh();
+    //SegmentLcdRefresh();
     if (counter == MEASUREMENT_PERIOD - 1)
     {
         counter = 0;
@@ -107,9 +107,9 @@ static void SetMode()
     }
 }
 
-static unsigned long CalcV()
+static unsigned long CalcV(unsigned short res)
 {
-    unsigned long v = ADCA.CH0.RES;
+    unsigned long v = res;
     if (v == 0xFFFF)
         return OVF;
     switch (mode)
@@ -206,11 +206,71 @@ static unsigned char GetPointPos()
     }
 }
 
-int main(void) {
+static void LcdTest(void)
+{
+    lcd_data[0] = 10; // U
+    lcd_data[1] = 1;
+    lcd_data[2] = 2;
+    lcd_data[3] = 3;
+    lcd_data[4] = 4;
+    lcd_data[5] = 0x80 + 5;
+    SegmentLcdPuts(lcd_data);
+}
+
+static void ProcessEvents(void)
+{
     unsigned long v;
     unsigned short res;
     unsigned char rc, pointPos, c;
 
+    if (start_measurements)
+    {
+        start_measurements = 0;
+        if (BUTTON_PRESSED)
+            NextMode();
+        else
+        {
+            res = GetADCValue(channel);
+            v = CalcV(res);
+            rc = IsOVF(res, v);
+            switch (rc)
+            {
+                case NO_OVF:
+                    rc = 5;
+                    pointPos = GetPointPos();
+                    while (rc > 0)
+                    {
+                        if (v != 0)
+                        {
+                            c = v % 10;
+                            v /= 10;
+                        }
+                        else if (rc < pointPos)
+                            c = 14; // space
+                        else
+                            c = 0;
+                        if (rc == pointPos)
+                            c |= 0x80;
+                        lcd_data[rc--] = c;
+                    }
+                    break;
+                case OVF:
+                    lcd_data[5] = 11;
+                    lcd_data[4] = 11;
+                    lcd_data[3] = 11;
+                    lcd_data[2] = 11;
+                    lcd_data[1] = 11;
+                    break;
+                default:
+                    break;
+            }
+            SegmentLcdPuts(lcd_data);
+        }
+    }
+}
+
+int main(void)
+{
     HALInit();
     
     SegmentLcdInit();
@@ -220,68 +280,14 @@ int main(void) {
     mode = MODE_V1;
     SetMode();
 
-    /*lcd_data[0] = 10; // U
-    lcd_data[1] = 1;
-    lcd_data[2] = 2;
-    lcd_data[3] = 3;
-    lcd_data[4] = 4;
-    lcd_data[5] = 0x80 + 5;
-    lcd_data[6] = 0xFF;
-    SegmentLcdPuts(lcd_data);*/
+    GetADCValue(channel);
+    
+    LcdTest();
     
     sei();
     
     while (1) {
         sleep_cpu();
-        if (start_measurements)
-        {
-            start_measurements = 0;
-            if (BUTTON_PRESSED)
-                NextMode();
-            else
-            {
-                ADCA.CH0.MUXCTRL = channel << 3;
-                ADCA.CH0.CTRL |= 0x80; // start conversion
-                // wait for conversion to complete
-                while (!ADCA.CH0.INTCTRL)
-                    ;
-                ADCA.CH0.INTCTRL = 1;
-                res = ADCA.CH0.RES;
-                v = CalcV(res);
-                rc = IsOVF(res, v);
-                switch (rc)
-                {
-                    case NO_OVF:
-                        rc = 5;
-                        pointPos = GetPointPos();
-                        while (rc > 0)
-                        {
-                            if (v != 0)
-                            {
-                                c = v % 10;
-                                v /= 10;
-                            }
-                            else if (rc < pointPos)
-                                c = 14; // space
-                            else
-                                c = 0;
-                            if (rc == pointPos)
-                                c |= 0x80;
-                            lcd_data[rc--] = c;
-                        }
-                        break;
-                    case OVF:
-                        lcd_data[5] = 11;
-                        lcd_data[4] = 11;
-                        lcd_data[3] = 11;
-                        lcd_data[2] = 11;
-                        lcd_data[1] = 11;
-                        break;
-                    default:
-                        break;
-                }
-                SegmentLcdPuts(lcd_data);
-            }
-        }
+        //ProcessEvents();
     }
 }
