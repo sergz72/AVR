@@ -4,7 +4,7 @@
 #include <avr/interrupt.h>
 #include <avr/wdt.h>
 
-#define COEFV1 19418
+#define COEFV1 1248
 #define COEFV2 10000
 
 #define COEFR1 19418
@@ -53,7 +53,7 @@ static unsigned char channel;
 ISR(RTC_OVF_vect)
 {
     wdt_reset();
-    //SegmentLcdRefresh();
+    SegmentLcdRefresh();
     if (counter == MEASUREMENT_PERIOD - 1)
     {
         counter = 0;
@@ -116,10 +116,10 @@ static unsigned long CalcV(unsigned short res)
     {
         case MODE_V1:
         case MODE_V2:
-            v = v * 10000 / coef;
+            v = v * 1000 / coef;
             break;
         default:
-            v = ~v * 10000 / coef;
+            v = ~v * 1000 / coef;
             break;
     }
     return v;
@@ -188,19 +188,19 @@ static unsigned char GetPointPos()
         case MODE_V1:
         // < 10k
         case MODE_R2:
-            return 0;
+            return 1;
         // > 10v
         case MODE_V2:
         // < 100k
         case MODE_R3:
         // > 1M
         case MODE_R5:
-            return 1;
+            return 2;
         // < 1k
         case MODE_R1:
         // < 1M
         case MODE_R4:
-            return 2;
+            return 3;
         default:
             return 10;
     }
@@ -280,14 +280,14 @@ int main(void)
     mode = MODE_V1;
     SetMode();
 
-    GetADCValue(channel);
-    
-    LcdTest();
-    
     sei();
+
+    //GetADCValue(channel);
     
+    //LcdTest();
+        
     while (1) {
         sleep_cpu();
-        //ProcessEvents();
+        ProcessEvents();
     }
 }

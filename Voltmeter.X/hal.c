@@ -1,18 +1,31 @@
 #include "board.h"
 #include <segment_lcd.h>
 #include <avr/sleep.h>
+#include <avr/interrupt.h>
+#include <avr/sleep.h>
 
 #define RTC_Busy()               ( RTC.STATUS & RTC_SYNCBUSY_bm )
 
+static volatile unsigned char adc_done;
+static volatile unsigned short adc_result;
+
+#define OFFSET 2560
+
+ISR(ADCA_CH0_vect)
+{
+    adc_done = 1;
+    adc_result = ADCA.CH0.RES - OFFSET;
+}
+
 unsigned short GetADCValue(unsigned char channel)
 {
-    //ADCA.CH0.MUXCTRL = channel << 3;
-    //ADCA.CH0.CTRL |= 0x80; // start conversion
+    adc_done = 0;
+    ADCA.CH0.MUXCTRL = channel << 3;
+    ADCA.CH0.CTRL |= 0x80; // start conversion
     // wait for conversion to complete
-    //while (!ADCA.CH0.INTFLAGS)
-    //    ;
-    //ADCA.CH0.INTCTRL = 1;
-    return 0;//ADCA.CH0.RES;
+    while (!adc_done)
+        sleep_cpu();
+    return adc_result;
 }
 
 static void InitRTC(void)
@@ -23,7 +36,7 @@ static void InitRTC(void)
     
     RTC.PER = RC_PER_VALUE;
     RTC.CTRL = 1; // no prescaler
-    RTC.INTCTRL = RTC_OVFINTLVL_LO_gc;
+    RTC.INTCTRL = RTC_OVFINTLVL_HI_gc;
     CLK.RTCCTRL = 0x05; //RTC Clock Source Enable - 1.024kHz from 32.768kHz internal oscillator
 }
 
@@ -31,13 +44,16 @@ static void InitADC(void)
 {
     // High current limit, max. sampling rate 75kSPS
     // More than 12-bit right adjusted result, then oversampling or averaging is used (SAPNUM>0)
-    //ADCA.CTRLB = 0b01100010;
-    ADCA.CTRLB = 0b01100000;
+    ADCA.CTRLB = 0b01100010;
+    //ADCA.CTRLB = 0b01100000;
     ADCA.REFCTRL = 0b00100000; // VREF = External reference from AREF on port A
     ADCA.PRESCALER = 0; // DIV4
     ADCA.SAMPCTRL = 0x3F; // maximum sampling time
     ADCA.CH0.CTRL = 1; // single ended
-    //ADCA.CH0.AVGCTRL = 8; //256 samples, 16 bit resolution
+    ADCA.CH0.INTCTRL = 1; // low level interrupt
+    ADCA.CH0.AVGCTRL = 8; //256 samples, 16 bit resolution
+    ADCA.CAL = 250;
+    ADCA.CAL = 250;
     
     ADCA.CTRLA = 1; // enable ADC
 }
@@ -98,6 +114,7 @@ void HALInit(void)
     while (!(OSC.STATUS & 4)); // Wait for RC32K to stabilize
   
     CCP = CCP_IOREG_gc;
+    //CLK.CTRL = 1;
     // clkper4 = clkper2 = clkper = clkcpu = 2M / 8 = 250 kHz
     CLK.PSCTRL = 5 << 2;
 
