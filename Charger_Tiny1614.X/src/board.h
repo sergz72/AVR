@@ -33,7 +33,7 @@
 #define TIMER_DELAY 250
 
 #define CLK_PER 10000
-#define F_SCL 400
+#define F_SCL 100
 
 #define LED_PORT PORTB
 #define LED_PIN 2

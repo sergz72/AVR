@@ -119,12 +119,32 @@ void load_data(void *p, unsigned int size)
 }
 
 /*
- 
+ * PB0 SCL
+ * PB1 SDA
+ * PB2 CON
+ * PB3 AC1_OUT
+ * PA0 UPDI
+ * PA1 PSH
+ * PA2 TRA
+ * PA3 TRB
+ * PA4 BAK
+ * PA5 AC1_INN0
+ * PA6 DAC0_OUT
+ * PA7 AIN7
  */
 
 static void InitPorts(void)
 {
     //LED_PORT.DIR = 1 << LED_PIN;
+    PORTA.PIN0CTRL = 0x08; // Pull-up enable
+    PORTA.PIN1CTRL = 0x08; // Pull-up enable
+    PORTA.PIN2CTRL = 0x08; // Pull-up enable
+    PORTA.PIN3CTRL = 0x08; // Pull-up enable
+    PORTA.PIN4CTRL = 0x08; // Pull-up enable
+
+    PORTB.PIN0CTRL = 0x08; // Pull-up enable
+    PORTB.PIN1CTRL = 0x08; // Pull-up enable
+    PORTB.PIN2CTRL = 0x08; // Pull-up enable
 }
 
 #define RTC_PER_VALUE (32768/(1000 / RTC_INT_MS))
@@ -170,6 +190,12 @@ static void InitADC(void)
     //todo
 }
 
+static void InitComparator1(void)
+{
+    AC1.MUXCTRLA = 0x0B; // not invert output, positive input - AINP1, negative input - DAC
+    AC1.CTRLA = 0x41; // Comparator enable, output enable
+}
+
 /* TWI Baud Rate Calculation
  * CLK_PER is 20 MHz
  *
@@ -178,7 +204,7 @@ static void InitADC(void)
  *  t_RISE = 300[ns] = 3.0e-7[s]
  */
 #define F_RISE 3000
-#define TWI_PARAM_BAUD (CLK_PER - F_SCL*(10+CLK_PER/F_RISE)) / (2 * F_SCL) 
+#define TWI_PARAM_BAUD (CLK_PER / (2 * F_SCL) - (5 + CLK_PER/F_RISE/2))
 
 static void InitI2C(void)
 {
@@ -198,6 +224,7 @@ void SystemInit(void)
     InitADC();
     InitDAC0();
     InitDAC1();
+    InitComparator1();
     InitRTC();
     InitI2C();
 
