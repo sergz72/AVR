@@ -5,6 +5,8 @@
 #include <gtk/gtk.h>
 
 int keyboard_state = 0x1F;
+int exit_delay = 0;
+int exit_long_press = 0;
 
 static void
 draw_cb (GtkDrawingArea *drawing_area,
@@ -63,17 +65,17 @@ downEvent (GtkWidget *widget,
 }
 
 static void
-enterEvent (GtkWidget *widget,
-            gpointer   data)
-{
-  keyboard_state = KB_ENTER;
-}
-
-static void
 exitEvent (GtkWidget *widget,
            gpointer   data)
 {
-  keyboard_state = KB_EXIT;
+  exit_delay = 2;
+}
+
+static void
+exitLongEvent (GtkWidget *widget,
+           gpointer   data)
+{
+  exit_long_press = 1;
 }
 
 static void
@@ -123,20 +125,24 @@ activate (GtkApplication *app,
   button = gtk_button_new_with_label ("SELECT");
   g_signal_connect (button, "clicked", G_CALLBACK (selectEvent), NULL);
   gtk_box_append (GTK_BOX (vbox), button);
-  button = gtk_button_new_with_label ("ENTER");
-  g_signal_connect (button, "clicked", G_CALLBACK (enterEvent), NULL);
-  gtk_box_append (GTK_BOX (vbox), button);
+
+  GtkGesture *gesture = gtk_gesture_long_press_new ();
+
   button = gtk_button_new_with_label ("EXIT");
   g_signal_connect (button, "clicked", G_CALLBACK (exitEvent), NULL);
+  g_signal_connect (gesture, "pressed", G_CALLBACK (exitLongEvent), NULL);
+  if (gtk_button_get_child (GTK_BUTTON (button)))
+    gtk_widget_add_controller (gtk_button_get_child (GTK_BUTTON (button)), GTK_EVENT_CONTROLLER (gesture));
+  else
+    gtk_widget_add_controller (button, GTK_EVENT_CONTROLLER (gesture));
   gtk_box_append (GTK_BOX (vbox), button);
 
   gtk_window_present (GTK_WINDOW (window));
 
-  set_battery_capacity(400);
   controller_init();
   UI_Init();
 
-  g_timeout_add(TIMER_DELAY, (GSourceFunc) time_handler, (gpointer) drawing_area);
+  g_timeout_add(TIMER_DELAY, (GSourceFunc)time_handler, drawing_area);
 }
 
 int
@@ -145,6 +151,19 @@ main (int    argc,
 {
   GtkApplication *app;
   int status;
+
+  set_battery_capacity(400);
+  unsigned int battery_voltage = 3700;
+  if (argc > 1)
+  {
+    battery_voltage = atoi(argv[1]);
+    if (battery_voltage < 2500)
+      battery_voltage = 2500;
+    else if (battery_voltage > 4200)
+      battery_voltage = 4200;
+  }
+
+  set_battery_voltage(battery_voltage);
 
   app = gtk_application_new ("oven.control", G_APPLICATION_DEFAULT_FLAGS);
   g_signal_connect (app, "activate", G_CALLBACK (activate), NULL);

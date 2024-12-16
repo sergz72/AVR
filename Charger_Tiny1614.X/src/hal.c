@@ -23,6 +23,7 @@ volatile const unsigned char *twi_ptr;
 volatile unsigned int twi_rest;
 volatile unsigned char twi_sending;
 volatile unsigned char twi_error;
+volatile char encoder_counter, exit_counter;
 
 // RTC counter interrupt
 ISR(RTC_CNT_vect)
@@ -50,6 +51,15 @@ ISR(TWI0_TWIM_vect)
         TWI0.MCTRLB |= TWI_MCMD_STOP_gc;
         twi_sending = 0;
     }
+}
+
+ISR(PORTA_PORT_vect)
+{
+    if (PORTA.IN & 4)
+        encoder_counter--;
+    else
+        encoder_counter++;
+    PORTA.INTFLAGS = 4 | 8;
 }
 
 void delayms(unsigned int ms)
@@ -91,12 +101,6 @@ int SSD1306_I2C_Write(int num_bytes, unsigned char control_byte, unsigned char *
   return twi_error;
 }
 
-unsigned int get_keyboard_status(void)
-{
-  //todo
-  return 0x1F;
-}
-
 unsigned int get_voltage(void)
 {
   //todo
@@ -121,30 +125,50 @@ void load_data(void *p, unsigned int size)
 /*
  * PB0 SCL
  * PB1 SDA
- * PB2 CON
+ * PB2 BAK
  * PB3 AC1_OUT
  * PA0 UPDI
  * PA1 PSH
  * PA2 TRA
  * PA3 TRB
- * PA4 BAK
+ * PA4 AIN4 (I_SENSE_HI)
  * PA5 AC1_INN0
  * PA6 DAC0_OUT
- * PA7 AIN7
+ * PA7 AIN7 (I_SENSE_LO)
  */
+
+char get_keyboard_status(void)
+{
+  if (!(PORTB.IN & 4))
+  {
+      exit_counter++;
+      return 0;
+  }
+  if (exit_counter)
+  {
+      char status = exit_counter > 2 ? KB_EXIT_LONG : KB_EXIT;
+      exit_counter = 0;
+      return status;
+  }
+  unsigned char state = PORTA.IN;
+  if (!(state & 2))
+      return KB_SELECT;
+  if (encoder_counter)
+  {
+      cli();
+      char cnt = encoder_counter;
+      encoder_counter = 0;
+      sei();
+      return KB_ENCODER | (cnt << 4);
+  }
+  return 0;
+}
 
 static void InitPorts(void)
 {
     //LED_PORT.DIR = 1 << LED_PIN;
-    PORTA.PIN0CTRL = 0x08; // Pull-up enable
-    PORTA.PIN1CTRL = 0x08; // Pull-up enable
-    PORTA.PIN2CTRL = 0x08; // Pull-up enable
-    PORTA.PIN3CTRL = 0x08; // Pull-up enable
-    PORTA.PIN4CTRL = 0x08; // Pull-up enable
-
-    PORTB.PIN0CTRL = 0x08; // Pull-up enable
-    PORTB.PIN1CTRL = 0x08; // Pull-up enable
-    PORTB.PIN2CTRL = 0x08; // Pull-up enable
+    //PORTA.PIN2CTRL = 3; // falling edge interrupt
+    PORTA.PIN3CTRL = 3; // falling edge interrupt
 }
 
 #define RTC_PER_VALUE (32768/(1000 / RTC_INT_MS))
@@ -218,6 +242,8 @@ static void InitI2C(void)
 void SystemInit(void)
 {
     delay = 0;
+    encoder_counter = 0;
+    exit_counter = 0;
     
     InitVREF();
     InitPorts();

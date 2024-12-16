@@ -17,8 +17,8 @@
 #define KB_UP 0x1E
 #define KB_DOWN 0x1D
 #define KB_SELECT 0x1B
-#define KB_ENTER 0x17
-#define KB_EXIT 0x0F
+#define KB_EXIT 0x17
+#define KB_EXIT_LONG 0x0F
 
 #define MAX_PROGRAM_ITEMS 5
 #define MAX_PROGRAMS 4
