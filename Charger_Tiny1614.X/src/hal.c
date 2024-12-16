@@ -2,6 +2,7 @@
 #include <avr/io.h>
 #include <avr/sleep.h>
 #include <avr/interrupt.h>
+#include <avr/eeprom.h>
 #include <string.h>
 
 FUSES = {
@@ -114,12 +115,12 @@ void set_current(int mA)
 
 void save_data(void *p, unsigned int size)
 {
-  //todo
+    eeprom_write_block(p, 0, size);
 }
 
 void load_data(void *p, unsigned int size)
 {
-  //todo
+    eeprom_read_block(p, 0, size);
 }
 
 /*
