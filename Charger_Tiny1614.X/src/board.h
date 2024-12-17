@@ -37,12 +37,20 @@
 #define LED_PORT PORTB
 #define LED_PIN 2
 
+#define BAK_BUTTON_PORT PORTB
+#define BAK_BUTTON_PIN 2
+#define PSH_BUTTON_PORT PORTA
+#define PSH_BUTTON_PIN 1
+#define TRA_PIN 2
+#define TRB_PIN 3
+
 void delayms(unsigned int ms);
 void SystemInit(void);
 char get_keyboard_status(void);
 int get_lcd_buffer_bit(int x, int y);
 unsigned int get_voltage(void);
 void set_current(int mA);
+int get_current(void);
 void save_data(void *p, unsigned int size);
 void load_data(void *p, unsigned int size);
 

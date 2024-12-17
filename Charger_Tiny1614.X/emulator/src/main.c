@@ -4,7 +4,7 @@
 #include "battery_emulator.h"
 #include <gtk/gtk.h>
 
-int keyboard_state = 0x1F;
+signed char keyboard_state = 0;
 int exit_delay = 0;
 int exit_long_press = 0;
 
@@ -39,7 +39,7 @@ static gboolean time_handler(GtkWidget *widget)
 
   if (widget == NULL) return FALSE;
 
-  unsigned int keyboard_status = get_keyboard_status();
+  signed char keyboard_status = get_keyboard_status();
   unsigned int v = get_voltage();
   int current = update_current(v);
   set_current(current);
@@ -54,14 +54,14 @@ static void
 upEvent (GtkWidget *widget,
              gpointer   data)
 {
-  keyboard_state = KB_UP;
+  keyboard_state = KB_ENCODER | 0x10;
 }
 
 static void
 downEvent (GtkWidget *widget,
     gpointer   data)
 {
-  keyboard_state = KB_DOWN;
+  keyboard_state = KB_ENCODER | 0xF0;
 }
 
 static void
@@ -165,7 +165,7 @@ main (int    argc,
 
   set_battery_voltage(battery_voltage);
 
-  app = gtk_application_new ("oven.control", G_APPLICATION_DEFAULT_FLAGS);
+  app = gtk_application_new ("charger.ui", G_APPLICATION_DEFAULT_FLAGS);
   g_signal_connect (app, "activate", G_CALLBACK (activate), NULL);
   status = g_application_run (G_APPLICATION (app), argc, argv);
   g_object_unref (app);

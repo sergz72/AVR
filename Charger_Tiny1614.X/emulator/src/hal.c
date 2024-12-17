@@ -5,11 +5,11 @@
 
 #define SIZE (LCD_HWHEIGHT * LCD_HWWIDTH / 8)
 
-extern int keyboard_state;
+extern signed char keyboard_state;
 extern int exit_delay;
 extern int exit_long_press;
 static unsigned char lcd_buffer[SIZE], *lcd_buffer_p = lcd_buffer;
-static unsigned int current = 0;
+static int current = 0;
 
 void delayms(unsigned int ms)
 {
@@ -27,9 +27,9 @@ int SSD1306_I2C_Write(int num_bytes, unsigned char control_byte, unsigned char *
   return 0;
 }
 
-unsigned int get_keyboard_status(void)
+char get_keyboard_status(void)
 {
-  unsigned int state = keyboard_state;
+  signed char state = keyboard_state;
   if (exit_delay)
   {
     exit_delay--;
@@ -39,7 +39,7 @@ unsigned int get_keyboard_status(void)
       exit_long_press = 0;
     }
   }
-  keyboard_state = 0x1F;
+  keyboard_state = 0;
   return state;
 }
 

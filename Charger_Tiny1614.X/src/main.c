@@ -17,10 +17,10 @@ int main()
       delayms(TIMER_DELAY);
       //LED_PORT.OUTTGL = 1 << LED_PIN;
 
-    unsigned int keyboard_status = get_keyboard_status();
+    signed char keyboard_status = get_keyboard_status();
     unsigned int v = get_voltage();
     int current = update_current(v);
     set_current(current);
-    Process_Timer_Event(keyboard_status, v, current);
+    Process_Timer_Event(keyboard_status, v, get_current());
   }
 }

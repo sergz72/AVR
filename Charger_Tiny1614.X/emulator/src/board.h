@@ -14,11 +14,10 @@
 #define DRAW_TEXT_MAX 20
 #define USE_VSNPRINTF
 
-#define KB_UP 0x1E
-#define KB_DOWN 0x1D
-#define KB_SELECT 0x1B
-#define KB_EXIT 0x17
-#define KB_EXIT_LONG 0x0F
+#define KB_ENCODER 1
+#define KB_SELECT 2
+#define KB_EXIT 3
+#define KB_EXIT_LONG 4
 
 #define MAX_PROGRAM_ITEMS 5
 #define MAX_PROGRAMS 4
@@ -31,7 +30,7 @@
 
 void delayms(unsigned int ms);
 void SystemInit(void);
-unsigned int get_keyboard_status(void);
+char get_keyboard_status(void);
 int get_lcd_buffer_bit(int x, int y);
 unsigned int get_voltage(void);
 void set_current(int mA);

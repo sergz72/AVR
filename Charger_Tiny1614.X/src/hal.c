@@ -5,6 +5,15 @@
 #include <avr/eeprom.h>
 #include <string.h>
 
+#define ADC0_VREF 2500
+#define DAC0_VREF 2500
+#define DAC1_VREF 1100
+
+#define BAK_BUTTON_PIN_POS (1<<BAK_BUTTON_PIN)
+#define PSH_BUTTON_PIN_POS (1<<PSH_BUTTON_PIN)
+#define TRA_PIN_POS (1<<TRA_PIN)
+#define TRB_PIN_POS (1<<TRB_PIN)
+
 FUSES = {
         .WDTCFG = 0x00, // WDTCFG {PERIOD=OFF, WINDOW=OFF}
         .BODCFG = 0x55, // BODCFG {SLEEP=ENABLED, ACTIVE=ENABLED, SAMPFREQ=125HZ, LVL=BODLEVEL2} 2.6v
@@ -18,13 +27,15 @@ FUSES = {
 
 LOCKBITS = 0xC5; // {LB=NOLOCK}
 
-volatile unsigned char delay;
+static volatile unsigned char delay;
 
-volatile const unsigned char *twi_ptr;
-volatile unsigned int twi_rest;
-volatile unsigned char twi_sending;
-volatile unsigned char twi_error;
-volatile char encoder_counter, exit_counter;
+static volatile const unsigned char *twi_ptr;
+static volatile unsigned int twi_rest;
+static volatile unsigned char twi_sending;
+static volatile unsigned char twi_error;
+static volatile char encoder_counter, exit_counter, keyboard_state;
+static unsigned long ref;
+static int set_current_value;
 
 // RTC counter interrupt
 ISR(RTC_CNT_vect)
@@ -56,11 +67,22 @@ ISR(TWI0_TWIM_vect)
 
 ISR(PORTA_PORT_vect)
 {
-    if (PORTA.IN & 4)
-        encoder_counter--;
+    if (PORTA.INTFLAGS & PSH_BUTTON_PIN_POS)
+        keyboard_state = KB_SELECT;
     else
-        encoder_counter++;
-    PORTA.INTFLAGS = 4 | 8;
+    {
+        if (PORTA.IN & TRA_PIN_POS)
+            encoder_counter--;
+        else
+            encoder_counter++;
+    }
+    PORTA.INTFLAGS = TRA_PIN_POS | TRB_PIN_POS | PSH_BUTTON_PIN_POS;
+}
+
+ISR(PORTB_PORT_vect)
+{
+    keyboard_state = KB_EXIT;
+    PORTB.INTFLAGS = BAK_BUTTON_PIN_POS;
 }
 
 void delayms(unsigned int ms)
@@ -76,7 +98,7 @@ void delayms(unsigned int ms)
     }
 }
 
-void TWI_sendMessage(unsigned char address, const unsigned char *message, unsigned int length)
+static void TWI_sendMessage(unsigned char address, const unsigned char *message, unsigned int length)
 {
     twi_ptr = message;
     twi_rest = length;
@@ -102,17 +124,6 @@ int SSD1306_I2C_Write(int num_bytes, unsigned char control_byte, unsigned char *
   return twi_error;
 }
 
-unsigned int get_voltage(void)
-{
-  //todo
-  return 3700;
-}
-
-void set_current(int mA)
-{
-  //todo
-}
-
 void save_data(void *p, unsigned int size)
 {
     eeprom_write_block(p, 0, size);
@@ -133,14 +144,79 @@ void load_data(void *p, unsigned int size)
  * PA2 TRA
  * PA3 TRB
  * PA4 AIN4 (I_SENSE_HI)
- * PA5 AC1_INN0
+ * PA5 AIN5 (V_SENSE)
  * PA6 DAC0_OUT
- * PA7 AIN7 (I_SENSE_LO)
+ * PA7 AC1_INP0,AIN7 (I_SENSE_LO)
  */
+
+static unsigned long adc_get(unsigned char ain)
+{
+    ADC0.MUXPOS = ain;
+    ADC0.COMMAND = ADC_STCONV_bm;
+    while (ADC0.COMMAND & ADC_STCONV_bm)
+        ;
+    return (unsigned long)ADC0.RES;
+}
+
+static unsigned int get_mv(unsigned char ain)
+{
+    ref = adc_get(ADC_MUXPOS_INTREF_gc);
+    unsigned long val = adc_get(ain);
+    return (unsigned int)(ADC0_VREF * val / ref);
+}
+
+unsigned int get_voltage(void)
+{
+    return get_mv(ADC_MUXPOS_AIN5_gc);
+}
+
+void set_current(int mA)
+{
+    set_current_value = mA;
+    if (mA == 0)
+    {
+        DAC0.DATA = 0;
+        DAC1.DATA = 0;
+        return;
+    }
+    if (mA > 0) // charge
+    {
+        DAC1.DATA = 0;
+        DAC0.DATA = (unsigned char)((unsigned long)mA * (255 * MAX_CURRENT / DAC0_VREF) / MAX_CURRENT);
+        return;
+    }
+    mA = -mA;
+    DAC0.DATA = 0;
+    DAC1.DATA = (unsigned char)((unsigned long)(mA >> 1) * 255 / DAC1_VREF);
+}
+
+static int get_current_hi(void)
+{
+    unsigned int vcc = (unsigned int)((unsigned long)ADC0_VREF * (unsigned long)1023 / ref);
+    unsigned int mv = get_mv(ADC_MUXPOS_AIN4_gc);
+    if (mv >= vcc)
+        return 0;
+    return (int)((vcc - mv) << 1); // 0.47 Ohm resistor
+}
+
+static int get_current_lo(void)
+{
+    unsigned int mv = get_mv(ADC_MUXPOS_AIN7_gc);
+    return (int)(mv << 1); // 0.47 Ohm resistor
+}
+
+int get_current(void)
+{
+    if (set_current_value == 0)
+        return 0;
+    if (set_current_value > 0) // charge
+        return get_current_hi();
+    return -get_current_lo();
+}
 
 char get_keyboard_status(void)
 {
-  if (!(PORTB.IN & 4))
+  if (!(BAK_BUTTON_PORT.IN & BAK_BUTTON_PIN_POS))
   {
       exit_counter++;
       return 0;
@@ -149,11 +225,15 @@ char get_keyboard_status(void)
   {
       char status = exit_counter > 2 ? KB_EXIT_LONG : KB_EXIT;
       exit_counter = 0;
+      keyboard_state = 0;
       return status;
   }
-  unsigned char state = PORTA.IN;
-  if (!(state & 2))
-      return KB_SELECT;
+  if (keyboard_state)
+  {
+      char status = keyboard_state;
+      keyboard_state = 0;
+      return status;
+  }
   if (encoder_counter)
   {
       cli();
@@ -168,8 +248,12 @@ char get_keyboard_status(void)
 static void InitPorts(void)
 {
     //LED_PORT.DIR = 1 << LED_PIN;
-    //PORTA.PIN2CTRL = 3; // falling edge interrupt
+    // PSH pin
+    PORTA.PIN1CTRL = 3; // falling edge interrupt
+    // TRB pin
     PORTA.PIN3CTRL = 3; // falling edge interrupt
+    // BAK pin
+    PORTB.PIN2CTRL = 3; // falling edge interrupt
 }
 
 #define RTC_PER_VALUE (32768/(1000 / RTC_INT_MS))
@@ -202,22 +286,20 @@ static void InitDAC1(void)
 static void InitVREF(void)
 {
     VREF.CTRLA = 0x22; // ADC0REF = 2.5v, DAC0REF = 2.5v
-    VREF.CTRLC = 2; // DAC1 reference = 2.5v
+    VREF.CTRLC = 1; // DAC1 reference = 1.1v
     VREF.CTRLB = 0x0B; // Enable references for DAC0, ADC0, DAC1
 }
 
 static void InitADC(void)
 {
-    //ADC0.CTRLB = ADC_SAMPNUM_ACC1_gc; // No accumulation
-    //ADC0.CTRLC = ADC_REFSEL_INTREF_gc | ADC_PRESC_DIV16_gc; // Internal VRef, CLK_ADC=CLK_PER/16
-    //ADC0.MUXPOS = AIN6; // select target pin
-    //ADC0.CTRLA = ADC_RESSEL_8BIT_gc | ADC_ENABLE_bm; // 8-bit mode
-    //todo
+    ADC0.CTRLB = 4; // 16 results accumulated
+    ADC0.CTRLC = ADC_REFSEL_VDDREF_gc | ADC_PRESC_DIV16_gc; // VRef = VDD, CLK_ADC=CLK_PER/16
+    ADC0.CTRLA = ADC_ENABLE_bm;
 }
 
 static void InitComparator1(void)
 {
-    AC1.MUXCTRLA = 0x0B; // not invert output, positive input - AINP1, negative input - DAC
+    AC1.MUXCTRLA = 0x83; // invert output, positive input - AINP0, negative input - DAC
     AC1.CTRLA = 0x41; // Comparator enable, output enable
 }
 
@@ -245,6 +327,7 @@ void SystemInit(void)
     delay = 0;
     encoder_counter = 0;
     exit_counter = 0;
+    keyboard_state = 0;
     
     InitVREF();
     InitPorts();
