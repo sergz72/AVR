@@ -22,8 +22,8 @@ ProgramItem *get_current_step(void);
 int is_program_step_valid(ProgramItem *step);
 void create_program_item(ProgramItem *step);
 void start_program(unsigned int voltage);
-void stop_program();
-int is_program_running();
+void stop_program(void);
+int is_program_running(void);
 void save_program_data(void);
 
 #endif

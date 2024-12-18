@@ -10,6 +10,7 @@
 #define MODE_EDIT_ITEM 2
 #define MODE_EDIT_VALUE 3
 #define MAX_MODE 3
+#define MODE_TEST 4
 
 #define HEADER_FONT fiveBySevenFontInfo
 #define CURRENT_VOLTAGE_FONT fiveBySevenFontInfo
@@ -24,6 +25,7 @@ static int selected_program_item_no;
 static int selected_program_step_digit;
 static ProgramItem *selected_program_item;
 static ProgramItem current_editor_item;
+static int test_current;
 
 static void DrawValue4(unsigned int x, unsigned int y, const FONT_INFO *font, int value, int show_sign,
                        unsigned int textColor, unsigned int bkColor)
@@ -293,16 +295,23 @@ static void SaveChanges(void)
   }
 }
 
-void UI_Init(void)
+static void DrawMvMa(void)
 {
-  mode = MODE_NONE;
-  selected_program_item = NULL;
-  selected_program_step_digit = -1;
+  LcdDrawText(GET_X(CURRENT_VOLTAGE_FONT, 4), SET_CURRENT_VOLTAGE_Y, " mV   ", &CURRENT_VOLTAGE_FONT,
+              BLACK_COLOR, WHITE_COLOR, NULL);
+  LcdDrawText(GET_X(CURRENT_VOLTAGE_FONT, 15), SET_CURRENT_VOLTAGE_Y, " mA ", &CURRENT_VOLTAGE_FONT,
+              BLACK_COLOR, WHITE_COLOR, NULL);
+  LcdDrawText(GET_X(CURRENT_VOLTAGE_FONT, 4), FACT_CURRENT_VOLTAGE_Y, " mV", &CURRENT_VOLTAGE_FONT,
+              WHITE_COLOR, BLACK_COLOR, NULL);
+  LcdDrawText(GET_X(CURRENT_VOLTAGE_FONT, 15), FACT_CURRENT_VOLTAGE_Y, " mA ", &CURRENT_VOLTAGE_FONT,
+              WHITE_COLOR, BLACK_COLOR, NULL);
+}
 
-  LcdInit();
+static void InitMainMode(void)
+{
   LcdDrawText(0, 0, "PM|Trg|MxC|StC|Vol ", &HEADER_FONT, BLACK_COLOR, WHITE_COLOR, NULL);
   value_buffer[1] = 0;
-  unsigned int y = HEADER_FONT.char_height + 1;
+  unsigned int y = HEADER_FONT.char_height;
   for (unsigned char i = 1; i <= MAX_PROGRAMS; i++)
   {
     value_buffer[0] = i + '0';
@@ -312,24 +321,55 @@ void UI_Init(void)
   }
   DrawProgramSteps(NULL, -1);
   SelectProgram(0);
-  LcdDrawText(GET_X(CURRENT_VOLTAGE_FONT, 4), SET_CURRENT_VOLTAGE_Y, " mV   ", &CURRENT_VOLTAGE_FONT,
-              BLACK_COLOR, WHITE_COLOR, NULL);
-  LcdDrawText(GET_X(CURRENT_VOLTAGE_FONT, 15), SET_CURRENT_VOLTAGE_Y, " mA ", &CURRENT_VOLTAGE_FONT,
-              BLACK_COLOR, WHITE_COLOR, NULL);
-  LcdDrawText(GET_X(CURRENT_VOLTAGE_FONT, 4), FACT_CURRENT_VOLTAGE_Y, " mV", &CURRENT_VOLTAGE_FONT,
-              WHITE_COLOR, BLACK_COLOR, NULL);
-  LcdDrawText(GET_X(CURRENT_VOLTAGE_FONT, 15), FACT_CURRENT_VOLTAGE_Y, " mA ", &CURRENT_VOLTAGE_FONT,
-              WHITE_COLOR, BLACK_COLOR, NULL);
+  DrawMvMa();
+  mode = MODE_NONE;
+}
+
+static void InitTestMode(void)
+{
+  LcdScreenFill(BLACK_COLOR);
+  DrawMvMa();
+  ShowSetVoltage(0);
+  mode = MODE_TEST;
+  test_current = 0;
+}
+
+void UI_Init(void)
+{
+  selected_program_item = NULL;
+  selected_program_step_digit = -1;
+
+  LcdInit();
+  InitMainMode();
   LcdUpdate();
 }
 
-void Process_Timer_Event(signed char keyboard_status, unsigned int voltage, int current)
+static void ChangeTestCurrent(int value)
 {
+  test_current += value * 10;
+  set_current(test_current);
+}
+
+static void ProcessTestModeTimerEvent(signed char keyboard_status)
+{
+  ShowSetCurrent(test_current);
+  switch (keyboard_status & 0x0F)
+  {
+    case KB_EXIT:
+      InitMainMode();
+      break;
+    case KB_ENCODER:
+      ChangeTestCurrent(keyboard_status >> 4);
+    break;
+  }
+}
+
+static void ProcessMainModeTimerEvent(signed char keyboard_status, unsigned int voltage, int current)
+{
+  set_current(current);
   ProgramItem *current_step = get_current_step();
   ShowSetVoltage(current_step == NULL ? 0 : current_step->voltage);
   ShowSetCurrent(current_step == NULL ? 0 : current_step->max_current);
-  ShowFactVoltage(voltage);
-  ShowFactCurrent(current);
   if (is_program_running())
   {
     if ((keyboard_status & 0x0F) == KB_EXIT)
@@ -356,7 +396,7 @@ void Process_Timer_Event(signed char keyboard_status, unsigned int voltage, int 
     case KB_ENCODER:
       ChangeSelection(keyboard_status >> 4);
       break;
-    case KB_EXIT_LONG:
+    case KB_ENTER:
       if (mode == MODE_NONE)
         start_program(voltage);
       else if (mode == MODE_EDIT_ITEM)
@@ -366,8 +406,22 @@ void Process_Timer_Event(signed char keyboard_status, unsigned int voltage, int 
         SwitchMode(0);
       }
       break;
+    case KB_EXIT_LONG:
+      if (mode == MODE_NONE)
+        InitTestMode();
+      break;
     default:
       break;
   }
+}
+
+void Process_Timer_Event(signed char keyboard_status, unsigned int voltage, int current)
+{
+  ShowFactVoltage(voltage);
+  ShowFactCurrent(current);
+  if (mode == MODE_TEST)
+    ProcessTestModeTimerEvent(keyboard_status);
+  else
+    ProcessMainModeTimerEvent(keyboard_status, voltage, current);
   LcdUpdate();
 }

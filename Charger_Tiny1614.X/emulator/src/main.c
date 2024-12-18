@@ -42,7 +42,6 @@ static gboolean time_handler(GtkWidget *widget)
   signed char keyboard_status = get_keyboard_status();
   unsigned int v = get_voltage();
   int current = update_current(v);
-  set_current(current);
   Process_Timer_Event(keyboard_status, v, current);
 
   gtk_widget_queue_draw(widget);
@@ -86,6 +85,13 @@ selectEvent (GtkWidget *widget,
 }
 
 static void
+enterEvent (GtkWidget *widget,
+             gpointer   data)
+{
+  keyboard_state = KB_ENTER;
+}
+
+static void
 activate (GtkApplication *app,
           gpointer        user_data)
 {
@@ -124,6 +130,9 @@ activate (GtkApplication *app,
   gtk_box_append (GTK_BOX (vbox), button);
   button = gtk_button_new_with_label ("SELECT");
   g_signal_connect (button, "clicked", G_CALLBACK (selectEvent), NULL);
+  gtk_box_append (GTK_BOX (vbox), button);
+  button = gtk_button_new_with_label ("ENTER");
+  g_signal_connect (button, "clicked", G_CALLBACK (enterEvent), NULL);
   gtk_box_append (GTK_BOX (vbox), button);
 
   GtkGesture *gesture = gtk_gesture_long_press_new ();

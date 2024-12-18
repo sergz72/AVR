@@ -20,7 +20,6 @@ int main()
     signed char keyboard_status = get_keyboard_status();
     unsigned int v = get_voltage();
     int current = update_current(v);
-    set_current(current);
     Process_Timer_Event(keyboard_status, v, get_current());
   }
 }

@@ -142,13 +142,13 @@ void start_program(unsigned int voltage)
   select_program(voltage);
 }
 
-void stop_program()
+void stop_program(void)
 {
   current_program_step = NULL;
   current_current = 0;
 }
 
-int is_program_running()
+int is_program_running(void)
 {
   return current_program_step != NULL;
 }

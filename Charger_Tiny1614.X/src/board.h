@@ -20,7 +20,8 @@
 #define KB_ENCODER 1
 #define KB_SELECT 2
 #define KB_EXIT 3
-#define KB_EXIT_LONG 4
+#define KB_ENTER 4
+#define KB_EXIT_LONG 5
 
 #define MAX_PROGRAM_ITEMS 5
 #define MAX_PROGRAMS 4
@@ -47,7 +48,6 @@
 void delayms(unsigned int ms);
 void SystemInit(void);
 char get_keyboard_status(void);
-int get_lcd_buffer_bit(int x, int y);
 unsigned int get_voltage(void);
 void set_current(int mA);
 int get_current(void);

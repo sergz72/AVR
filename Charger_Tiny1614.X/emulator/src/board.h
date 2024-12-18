@@ -17,7 +17,8 @@
 #define KB_ENCODER 1
 #define KB_SELECT 2
 #define KB_EXIT 3
-#define KB_EXIT_LONG 4
+#define KB_ENTER 4
+#define KB_EXIT_LONG 5
 
 #define MAX_PROGRAM_ITEMS 5
 #define MAX_PROGRAMS 4
