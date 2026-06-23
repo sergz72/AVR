@@ -62,12 +62,12 @@ ISR (USART0_RXC_vect)
  * PB3(6)  RX
  * PA0(10) UPDI
  * PA1(11) INT
- * PA2(12)
- * PA3(13)
+ * PA2(12) LED_TIMER
+ * PA3(13) LED_BATTERY
  * PA4(2)  TCD WOA
- * PA5(3)  LED_TIMER
+ * PA5(3)
  * PA6(4)  AC1 AINP1
- * PA7(5)  LED_BATTERY
+ * PA7(5)
  */
 
 static void
