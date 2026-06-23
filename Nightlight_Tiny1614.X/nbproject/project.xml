@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://www.netbeans.org/ns/project/1">
+    <type>com.microchip.mplab.nbide.embedded.makeproject</type>
+    <configuration>
+        <data xmlns="http://www.netbeans.org/ns/make-project/1">
+            <name>Nightlight_Tiny1614</name>
+            <creation-uuid>655d3e17-d85a-488f-a001-aac953a70f22</creation-uuid>
+            <make-project-type>0</make-project-type>
+            <sourceEncoding>ISO-8859-1</sourceEncoding>
+            <make-dep-projects/>
+            <sourceRootList>
+                <sourceRootElem>src</sourceRootElem>
+                <sourceRootElem>../../common_lib/rtc</sourceRootElem>
+                <sourceRootElem>../lib</sourceRootElem>
+            </sourceRootList>
+            <confList>
+                <confElem>
+                    <name>debug</name>
+                    <type>2</type>
+                </confElem>
+                <confElem>
+                    <name>release</name>
+                    <type>2</type>
+                </confElem>
+            </confList>
+            <formatting>
+                <project-formatting-style>false</project-formatting-style>
+            </formatting>
+        </data>
+    </configuration>
+</project>
